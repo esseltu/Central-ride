@@ -1,17 +1,25 @@
 import React from 'react';
+// NavLink is a special React Router component used for navigation links.
+// It automatically detects if the current URL matches the link's path (`to="/..."`)
+// and lets us dynamically apply an 'active' style or class (using a function callback).
 import { NavLink } from 'react-router-dom';
 import { useMockData } from '../context/MockDataContext';
 import { Home, Clock, DollarSign, LayoutDashboard, Database, Bell, User } from 'lucide-react';
 
+// BottomNav component represents the mobile-only navigation bottom tab bar.
 const BottomNav = () => {
   const { currentUser } = useMockData();
   
+  // If no user session is loaded, do not display the bottom navigation.
   if (!currentUser) return null;
 
   return (
     <nav className="bottom-nav">
+      
+      {/* 1. STUDENT BOTTOM TABS */}
       {currentUser.role === 'student' && (
         <>
+          {/* NavLink's `className` takes a callback function that receives an object with an `isActive` boolean property. */}
           <NavLink to="/" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
             <Home size={24} />
             <span>Ride</span>
@@ -27,6 +35,7 @@ const BottomNav = () => {
         </>
       )}
 
+      {/* 2. DRIVER / RIDER BOTTOM TABS */}
       {(currentUser.role === 'driver' || currentUser.role === 'rider') && (
         <>
           <NavLink to="/" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
@@ -44,6 +53,7 @@ const BottomNav = () => {
         </>
       )}
 
+      {/* 3. ADMIN BOTTOM TABS */}
       {currentUser.role === 'admin' && (
         <>
           <NavLink to="/" className={({isActive}) => `nav-item ${isActive ? 'active' : ''}`}>
@@ -65,3 +75,4 @@ const BottomNav = () => {
 };
 
 export default BottomNav;
+

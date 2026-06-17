@@ -3,17 +3,32 @@ import { useMockData } from '../../context/MockDataContext';
 import { Users, Activity, AlertCircle, Star, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+// AdminDashboard component: Displays platform stats, active SOS alerts, and user rating categories.
 const AdminDashboard = () => {
+  // Extract real-time rides and alerts from MockDataContext snapshot streams.
   const { rides, alerts } = useMockData();
+  
+  // Local state to toggle rating selection modal open/closed.
   const [showRatingModal, setShowRatingModal] = useState(false);
   const navigate = useNavigate();
+  
+  // AGGREGATED STATS:
+  // Filter and count how many rides are in active transit states (requested, accepted, or in progress).
   const activeRidesCount = rides.filter(r => ['requested', 'accepted', 'in_progress'].includes(r.status)).length;
   
   return (
     <div style={{ padding: 'var(--space-xl)' }}>
       <h1 className="text-display-lg" style={{ marginBottom: 'var(--space-xl)' }}>Admin Dashboard</h1>
       
+      {/* 4 STATS CARDS LAYOUT:
+          - Active Rides Count
+          - Mock Online Drivers count
+          - Ratings Category link (opens modal)
+          - Active SOS Alerts Count (turns red if alerts.length > 0)
+      */}
       <div className="flex-col gap-md mb-4" style={{ marginBottom: 'var(--space-2xl)' }}>
+        
+        {/* Card 1: Active Rides */}
         <div className="card flex-row items-center gap-md">
           <div className="btn-icon flex-col justify-center items-center"><Activity size={20} /></div>
           <div>
@@ -22,6 +37,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Card 2: Online Drivers */}
         <div className="card flex-row items-center gap-md">
           <div className="btn-icon flex-col justify-center items-center"><Users size={20} /></div>
           <div>
@@ -30,6 +46,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
+        {/* Card 3: User Ratings Modal Trigger */}
         <div className="card flex-row items-center gap-md" onClick={() => setShowRatingModal(true)} style={{ cursor: 'pointer' }}>
           <div className="btn-icon flex-col justify-center items-center"><Star size={20} /></div>
           <div>
@@ -38,6 +55,7 @@ const AdminDashboard = () => {
           </div>
         </div>
         
+        {/* Card 4: SOS Alerts */}
         <div className="card flex-row items-center gap-md" style={{ borderLeft: alerts.length > 0 ? '4px solid var(--accent-red)' : 'none' }}>
           <div className="btn-icon flex-col justify-center items-center"><AlertCircle size={20} color={alerts.length > 0 ? 'var(--accent-red)' : 'var(--ink)'} /></div>
           <div>
@@ -47,6 +65,9 @@ const AdminDashboard = () => {
         </div>
       </div>
       
+      {/* DYNAMIC ALERT BANNER LIST:
+          Only renders if there is at least one active SOS alert.
+      */}
       {alerts.length > 0 && (
         <div>
           <h2 className="text-display-md" style={{ marginBottom: 'var(--space-md)' }}>Active Alerts</h2>
@@ -60,7 +81,9 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Rating Selection Modal */}
+      {/* MODAL WINDOW OVERLAY:
+          Triggered when showRatingModal is true. Lets administrators jump to rating tables filtered by roles.
+      */}
       {showRatingModal && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -74,6 +97,7 @@ const AdminDashboard = () => {
             </button>
             <h2 className="text-display-md text-center" style={{ marginBottom: 'var(--space-md)' }}>View Ratings</h2>
             
+            {/* Navigates to subroutes corresponding to different roles */}
             <button className="btn btn-secondary" onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/student'); }}>Students</button>
             <button className="btn btn-secondary" onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/driver'); }}>Drivers (Car)</button>
             <button className="btn btn-secondary" onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/rider'); }}>Riders (Motor)</button>
@@ -85,3 +109,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

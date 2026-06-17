@@ -3,12 +3,21 @@ import { useMockData } from '../../context/MockDataContext';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search, Star } from 'lucide-react';
 
+// AdminRatings component displays user list ratings filtered by active roles (student/driver/rider).
 const AdminRatings = () => {
+  // Extract all registered users from context data stream.
   const { users } = useMockData();
+  
+  // useParams extracts route parameters matching `/admin/ratings/:role` inside App.jsx.
   const { role } = useParams(); // 'student', 'driver', or 'rider'
   const navigate = useNavigate();
+  
+  // Search state to filter list entries by search string.
   const [searchTerm, setSearchTerm] = useState('');
 
+  // FILTER LOGIC:
+  // 1. Matches only users belonging to the active role parameter (e.g. role === 'driver').
+  // 2. Further narrows matching items if the admin has typed search criteria into the search box.
   const filteredUsers = users.filter(user => {
     if (user.role !== role) return false;
     if (searchTerm && !user.name.toLowerCase().includes(searchTerm.toLowerCase())) return false;
@@ -17,6 +26,8 @@ const AdminRatings = () => {
 
   return (
     <div style={{ padding: 'var(--space-xl)', height: '100%', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* Page Header with Back Arrow Button */}
       <div className="flex-row items-center gap-md" style={{ marginBottom: 'var(--space-xl)' }}>
         <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px' }}>
           <ArrowLeft size={24} color="var(--ink)" />
@@ -24,6 +35,7 @@ const AdminRatings = () => {
         <h1 className="text-display-md" style={{ textTransform: 'capitalize' }}>{role} Ratings</h1>
       </div>
 
+      {/* Real-time Filter Input Search Box */}
       <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--canvas-soft)', borderRadius: 'var(--radius-pill)', padding: '0 var(--space-md)', marginBottom: 'var(--space-xl)' }}>
         <Search size={20} color="var(--ink)" />
         <input 
@@ -35,6 +47,7 @@ const AdminRatings = () => {
         />
       </div>
 
+      {/* Scrollable Ratings list container */}
       <div className="flex-col gap-md" style={{ overflowY: 'auto' }}>
         {filteredUsers.length === 0 ? (
           <p className="text-body-md text-center" style={{ marginTop: 'var(--space-2xl)' }}>No users found.</p>
@@ -48,7 +61,10 @@ const AdminRatings = () => {
                 </span>
               </div>
               
-              {/* Custom Progress Bar */}
+              {/* DYNAMIC PROGRESS BAR:
+                  Visualizes user's score out of 5 by setting the width as a percentage: `(user.rating / 5) * 100`.
+                  Colors the bar: Primary red/burgundy if >=4, Orange if >=3, Crimson/Red if low.
+              */}
               <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--surface-pressed)', borderRadius: '4px', overflow: 'hidden' }}>
                 <div style={{ 
                   height: '100%', 
@@ -71,3 +87,4 @@ const AdminRatings = () => {
 };
 
 export default AdminRatings;
+

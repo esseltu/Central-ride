@@ -1,14 +1,40 @@
 import React, { useState } from 'react';
 import { useMockData } from '../../context/MockDataContext';
+// Lucide icons for structure styling:
+// - MapPin: Renders a destination pin icon.
+// - Navigation: Renders a directional arrow.
+// - ShieldAlert: Renders the emergency/SOS shield indicator.
+// - Plus/X: Adding/removing stops.
+// - Car/Package: Differentiating ride options vs parcel options.
+// - Star: Rating drivers out of 5 stars.
+// - LocateFixed: Focuses/resolves user's current GPS position.
+// - Map: Interactive map indicator.
 import { MapPin, Navigation, ShieldAlert, Plus, X, Car, Package, Star, LocateFixed, Map } from 'lucide-react';
 import InteractiveMap, { CAMPUS_LOCATIONS } from '../../components/InteractiveMap';
 
+// StudentHome component: The core interface for student users to request, track, pay, and rate rides.
 const StudentHome = () => {
+  // Extract actions and active ride metadata from the central MockDataContext provider.
   const { activeRide, requestRide, triggerSOS, confirmPayment, submitStudentRating, cancelRide } = useMockData();
+  
+  // REACT STATE HOOKS:
+  // - pickup: Text input for starting location. Defaults to 'Current Location'.
+  // - dropoff: Text input for destination location.
+  // - stops: Array of strings containing text inputs for intermediate stop points.
+  // - rideType: Differentiates standard 'ride', 'parcel' delivery, or medical 'emergency'.
+  // - rating: Local state tracking the star rating (1-5) selected for the driver.
+  // - eta: String estimating trip duration in minutes (e.g. '8 min').
+  // - estimatedPrice: Estimated cost of the trip in Ghana Cedis.
+  // - showPriceModal: Toggles visibility of the pricing approval modal popup.
+  // - gpsCoords: Stores actual GPS coordinates resolved from device location.
+  // - customPickupCoords: GPS coordinates if the user chose pickup by tapping on the map.
+  // - customDropoffCoords: GPS coordinates if the user chose destination by tapping on the map.
+  // - customStopsCoords: Array of GPS coordinates corresponding to intermediate stops selected on the map.
+  // - selectingMap: Tracks which input is currently being selected via map tap ('pickup', 'dropoff', or an array index).
   const [pickup, setPickup] = useState('Current Location');
   const [dropoff, setDropoff] = useState('');
   const [stops, setStops] = useState([]);
-  const [rideType, setRideType] = useState('ride'); // 'ride' or 'parcel'
+  const [rideType, setRideType] = useState('ride'); // 'ride', 'parcel', or 'emergency'
   const [rating, setRating] = useState(5);
   const [eta, setEta] = useState(null);
   const [estimatedPrice, setEstimatedPrice] = useState(10);
@@ -19,16 +45,20 @@ const StudentHome = () => {
   const [customStopsCoords, setCustomStopsCoords] = useState([]);
   const [selectingMap, setSelectingMap] = useState(null);
 
+  // MAP CLICK HANDLER:
+  // Fired when the student taps the map while in 'selectingMap' mode.
+  // It matches coordinates back to the correct field, updating label inputs to 'Selected on Map'.
   const handleMapClick = (coords) => {
     if (selectingMap === 'pickup') {
       setPickup('Selected on Map');
       setCustomPickupCoords(coords);
-      setSelectingMap(null);
+      setSelectingMap(null); // Exit map-tap mode
     } else if (selectingMap === 'dropoff') {
       setDropoff('Selected on Map');
       setCustomDropoffCoords(coords);
       setSelectingMap(null);
     } else if (typeof selectingMap === 'number') {
+      // If index matches a number, update the matching stop index inside our arrays.
       const newStops = [...stops];
       newStops[selectingMap] = 'Selected on Map';
       setStops(newStops);
@@ -40,14 +70,19 @@ const StudentHome = () => {
     }
   };
   
+  // Add stop field: appends an empty string and null coordinate reference to stops arrays.
   const handleAddStop = () => {
     setStops([...stops, '']);
     setCustomStopsCoords([...customStopsCoords, null]);
   };
 
+  // DEEP LINKING TO GOOGLE MAPS NAVIGATION:
+  // Constructs a universal deep link URL containing origin, destination, and intermediate stops/waypoints,
+  // then opens it in a new tab to let students follow real-world route tracking.
   const openGoogleMaps = () => {
     if (!activeRide) return;
     
+    // Helper to extract GPS coordinate strings "lat,lng" or fall back to address string parameters.
     const getCoordString = (coord, fallbackStr) => {
       if (coord && Array.isArray(coord) && coord[0] !== undefined) return `${coord[0]},${coord[1]}`;
       if (coord && coord.lat !== undefined) return `${coord.lat},${coord.lng}`;
@@ -59,6 +94,7 @@ const StudentHome = () => {
     const destination = getCoordString(activeRide.dropoffCoords, activeRide.dropoff) || encodeURIComponent(activeRide.dropoff);
     let gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
     
+    // Append intermediate stops as waypoints separated by a pipe character '|'
     if (activeRide.stops && activeRide.stops.length > 0) {
       const waypoints = activeRide.stops.map((stopStr, i) => {
         const coord = activeRide.stopsCoords ? activeRide.stopsCoords[i] : null;
@@ -72,6 +108,7 @@ const StudentHome = () => {
     window.open(gmapsUrl, '_blank');
   };
 
+  // Modify text of intermediate stop field, resetting its map coordinate references.
   const handleStopChange = (index, value) => {
     const newStops = [...stops];
     newStops[index] = value;
@@ -82,6 +119,7 @@ const StudentHome = () => {
     setCustomStopsCoords(newStopsCoords);
   };
 
+  // Remove stop field entirely from stops array.
   const handleRemoveStop = (index) => {
     const newStops = [...stops];
     newStops.splice(index, 1);
@@ -92,7 +130,12 @@ const StudentHome = () => {
     setCustomStopsCoords(newStopsCoords);
   };
 
+  // CONDITIONAL ACTIVE FLOW RENDERING:
+  // If the student has an active/ongoing ride in context, check its status and render appropriate panels.
   if (activeRide) {
+    
+    // FLOW 1: PAYMENT MODAL CARD
+    // Fired when the driver completes the ride and expects payment.
     if (activeRide.status === 'payment_pending' || activeRide.status === 'driver_rating') {
       return (
         <div style={{ padding: 'var(--space-xl)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -119,12 +162,15 @@ const StudentHome = () => {
       );
     }
 
+    // FLOW 2: STUDENT FEEDBACK / RATING CARD
+    // Fired after the student confirms payment. Prompts feedback for the driver.
     if (activeRide.status === 'student_rating') {
       return (
         <div style={{ padding: 'var(--space-xl)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <div className="card-soft text-center" style={{ backgroundColor: 'var(--canvas)', border: '1px solid var(--surface-pressed)' }}>
             <p className="text-display-md" style={{ marginBottom: 'var(--space-xs)' }}>Rate your trip</p>
             <p className="text-body-sm" style={{ marginBottom: 'var(--space-md)' }}>How was {activeRide.driverName}?</p>
+            {/* Renders 5 star icons. Taps update local state variable `rating`. */}
             <div className="flex-row justify-center gap-sm" style={{ marginBottom: 'var(--space-lg)' }}>
               {[1, 2, 3, 4, 5].map(star => (
                 <Star key={star} size={32} fill={star <= rating ? 'var(--primary)' : 'none'} color={star <= rating ? 'var(--primary)' : 'var(--ink)'} onClick={() => setRating(star)} />
@@ -138,6 +184,8 @@ const StudentHome = () => {
       );
     }
 
+    // FLOW 3: ACTIVE MAP TRACKING PANELS
+    // Displays the real-time Leaflet map and status card while the ride is requested, accepted, or in progress.
     return (
       <div className="split-layout">
         {/* Map on Right (Desktop) / Top (Mobile) */}
@@ -152,7 +200,7 @@ const StudentHome = () => {
              />
              <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--primary)', color: 'white', padding: '6px 12px', borderRadius: '16px', fontSize: '14px', zIndex: 1000, pointerEvents: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
                 Tracking {activeRide.type === 'parcel' ? 'Parcel' : 'Ride'}...
-             </div>
+              </div>
           </div>
         </div>
         
@@ -210,6 +258,7 @@ const StudentHome = () => {
                  </div>
                )}
 
+               {/* Passenger verification PIN (must be supplied to driver on entry) */}
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: 'var(--space-md)', borderRadius: 'var(--radius-md)' }}>
                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>OTP Code</span>
                  <strong style={{ fontSize: '24px', letterSpacing: '6px' }}>{activeRide.otp || '1234'}</strong>
@@ -225,6 +274,7 @@ const StudentHome = () => {
                )}
             </div>
 
+            {/* Deep navigation button */}
             {(activeRide.status === 'in_progress' || activeRide.status === 'accepted' || activeRide.status === 'arrived') && (
               <button 
                 className="btn btn-large w-full" 
@@ -236,11 +286,13 @@ const StudentHome = () => {
               </button>
             )}
 
+            {/* Emergency SOS Alarm trigger */}
             <button className="btn btn-large w-full" style={{ backgroundColor: 'var(--accent-red)', color: 'white', marginTop: 'var(--space-md)', border: '1px solid rgba(255,255,255,0.2)' }} onClick={triggerSOS}>
               <ShieldAlert size={20} />
               SOS Emergency
             </button>
             
+            {/* Allow cancellation if the driver hasn't started the trip yet */}
             {(activeRide.status === 'requested' || activeRide.status === 'accepted') && (
               <button 
                 className="btn btn-large w-full" 
@@ -260,6 +312,8 @@ const StudentHome = () => {
     );
   }
 
+  // FLOW 4: INITIAL SEARCH & REQUEST FORM
+  // Rendered if the student does not have any active ride request.
   return (
     <div className="split-layout">
       {/* Map on Right (Desktop) / Top (Mobile) */}
@@ -278,13 +332,12 @@ const StudentHome = () => {
              onMapClick={handleMapClick}
            />
            
+           {/* Floating instructions bar for map click selection */}
            {selectingMap !== null && (
              <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--ink)', color: 'white', padding: '12px 24px', borderRadius: '24px', fontSize: '14px', fontWeight: 'bold', zIndex: 1000, boxShadow: '0 4px 12px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'none', whiteSpace: 'nowrap' }}>
                <Map size={16} /> Tap on the map to set {typeof selectingMap === 'number' ? `Stop ${selectingMap + 1}` : selectingMap}
              </div>
            )}
-           
-
         </div>
       </div>
       
@@ -292,6 +345,7 @@ const StudentHome = () => {
       <div className="split-sidebar mobile-pull-up">
         <div className="card flex-col gap-md">
           
+          {/* Service/Category Switcher Tabs */}
           <div className="flex-row gap-sm" style={{ backgroundColor: 'var(--canvas-soft)', padding: 'var(--space-xxs)', borderRadius: 'var(--radius-pill)' }}>
             <button 
               className="btn flex-row items-center justify-center gap-sm" 
@@ -312,7 +366,7 @@ const StudentHome = () => {
               style={{ flex: 1, backgroundColor: rideType === 'emergency' ? 'var(--accent-red)' : 'transparent', color: rideType === 'emergency' ? 'var(--on-primary)' : 'var(--accent-red)', borderRadius: 'var(--radius-pill)', padding: 'var(--space-xs)' }}
               onClick={() => {
                 setRideType('emergency');
-                setDropoff('School Clinic');
+                setDropoff('School Clinic'); // Emergency requests pre-fill clinic destination
               }}
             >
               <ShieldAlert size={16} /> Emergency
@@ -324,6 +378,7 @@ const StudentHome = () => {
           </h2>
           
           <div className="flex-col gap-sm">
+            {/* A: PICKUP INPUT FIELD */}
             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--canvas-softer)', borderRadius: 'var(--radius-md)', padding: '0 var(--space-sm)' }}>
               <div style={{ padding: 'var(--space-sm)' }}><MapPin size={20} color="var(--primary)" /></div>
               <input 
@@ -355,6 +410,7 @@ const StudentHome = () => {
               </button>
             </div>
             
+            {/* B: DYNAMIC INTERMEDIATE STOPS INPUT LIST */}
             {stops.map((stop, index) => (
               <div key={index} style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--canvas-softer)', borderRadius: 'var(--radius-md)', padding: '0 var(--space-sm)' }}>
                 <div style={{ padding: 'var(--space-sm)' }}><MapPin size={16} color="var(--ink)" /></div>
@@ -378,10 +434,12 @@ const StudentHome = () => {
               </div>
             ))}
             
+            {/* Add stop click trigger */}
             <button onClick={handleAddStop} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
               <Plus size={16} /> Add Stop
             </button>
             
+            {/* C: DESTINATION INPUT FIELD */}
             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--canvas-softer)', borderRadius: 'var(--radius-md)', padding: '0 var(--space-sm)' }}>
               <div style={{ padding: 'var(--space-sm)' }}><Navigation size={20} color="var(--ink)" /></div>
               <input 
@@ -404,6 +462,7 @@ const StudentHome = () => {
             </div>
           </div>
           
+          {/* Triggers estimate modal */}
           <button 
             className="btn btn-large" 
             onClick={() => { if(pickup && dropoff) setShowPriceModal(true) }}
@@ -416,6 +475,7 @@ const StudentHome = () => {
         </div>
       </div>
 
+      {/* CONFIRMATION FARE MODAL POPUP */}
       {showPriceModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}>
           <div className="card" style={{ width: '90%', maxWidth: '400px', padding: 'var(--space-xl)', animation: 'slideUp 0.3s ease-out' }}>
@@ -435,6 +495,7 @@ const StudentHome = () => {
               </div>
             </div>
 
+            {/* Actually submits ride to Cloud Firestore */}
             <button 
               className="btn btn-large w-full" 
               onClick={() => { 

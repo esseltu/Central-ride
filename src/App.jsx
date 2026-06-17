@@ -1,15 +1,25 @@
 import React from 'react';
+// Import routing components from 'react-router-dom':
+// - Routes: Container for all our Route definitions.
+// - Route: Defines a path (e.g. '/profile') and the React component to show when that path is active.
+// - Navigate: Used to redirect the user to a different path (e.g. from an invalid URL back to home).
+// - useLocation: A React hook that returns the current browser location object (useful for checking URL path).
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
+// Import our custom React Context hooks to access global state:
+// - useMockData: Holds active rides, loading state, and toast message info.
+// - useAuth: Holds the currently logged-in Firebase user and their Firestore role info.
 import { useMockData } from './context/MockDataContext';
 import { useAuth } from './context/AuthContext';
 
+// Import the reusable structural layout components
 import Splash from './components/Splash';
 import Login from './components/Login';
 import RoleSwitcher from './components/RoleSwitcher';
 import BottomNav from './components/BottomNav';
 import TopNav from './components/TopNav';
 
-// Placeholders for views
+// Import the specific page views (screens) for students, drivers, and administrators
 import StudentHome from './views/student/StudentHome';
 import StudentHistory from './views/student/StudentHistory';
 import DriverHome from './views/driver/DriverHome';
@@ -18,29 +28,41 @@ import AdminDashboard from './views/admin/AdminDashboard';
 import AdminRecords from './views/admin/AdminRecords';
 import AdminRatings from './views/admin/AdminRatings';
 import Profile from './components/Profile';
+
+// Import Bell icon from lucide-react for notification styling
 import { Bell } from 'lucide-react';
 
 function App() {
+  // useLocation lets us know which page the user is currently looking at
   const location = useLocation();
+  
+  // Extract global states from our Context providers
   const { isInitializing, toastMessage } = useMockData();
   const { currentUser, userData } = useAuth();
 
+  // STEP 1: If the app is checking user login state or initializing database data, show the splash loading screen.
   if (isInitializing) {
     return <Splash />;
   }
 
-  // If Firebase auth is loaded but no user is logged in
+  // STEP 2: If the user is NOT logged in, redirect them to the Login screen.
   if (!currentUser) {
     return <Login />;
   }
 
-  // If user is logged in but their Firestore role document hasn't loaded yet
+  // STEP 3: If the user is logged in, but we haven't loaded their profile data/role from Firestore, show loading splash.
   if (!userData) {
-    return <Splash />; // or a loading spinner
+    return <Splash />; // Falls back to loading splash while fetching user profile
   }
 
+  // STEP 4: Render the main page if the user is authenticated and their role data is loaded successfully.
   return (
     <div className="page-container">
+      
+      {/* TOAST SYSTEM:
+          If there's a global notification message (toastMessage), display it at the top of the screen.
+          This uses CSS backdrop-filter for a blurry glassmorphism effect.
+      */}
       {toastMessage && (
         <div style={{
           position: 'fixed', 
@@ -73,12 +95,22 @@ function App() {
         </div>
       )}
       
-
+      {/* TOP NAVIGATION BAR: Renders on desktop screens */}
       <TopNav />
+      
+      {/* ROLE SWITCHER / LOGOUT BUTTON:
+          Only visible on mobile screens (`mobile-only` CSS class) and hidden when viewing the profile page.
+      */}
       <div className="mobile-only">
         {location.pathname !== '/profile' && <RoleSwitcher />}
       </div>
       
+      {/* ROLE-BASED PAGE ROUTING:
+          We conditionally load routes depending on the user's role: 'student', 'driver'/'rider', or 'admin'.
+          If they try to go to a URL they aren't authorized to access, `*` redirects them to `/` (home).
+      */}
+      
+      {/* 1. STUDENT ROUTES */}
       {userData.role === 'student' && (
         <Routes>
           <Route path="/" element={<StudentHome />} />
@@ -88,6 +120,7 @@ function App() {
         </Routes>
       )}
       
+      {/* 2. DRIVER / MOTOR RIDER ROUTES */}
       {(userData.role === 'driver' || userData.role === 'rider') && (
         <Routes>
           <Route path="/" element={<DriverHome />} />
@@ -97,6 +130,7 @@ function App() {
         </Routes>
       )}
       
+      {/* 3. ADMIN ROUTES */}
       {userData.role === 'admin' && (
         <Routes>
           <Route path="/" element={<AdminDashboard />} />
@@ -107,9 +141,11 @@ function App() {
         </Routes>
       )}
 
+      {/* BOTTOM NAVIGATION BAR: Renders on mobile screens for easy thumb reach */}
       <BottomNav />
     </div>
   );
 }
 
 export default App;
+

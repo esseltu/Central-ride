@@ -3,14 +3,25 @@ import { useMockData } from '../../context/MockDataContext';
 import { Star } from 'lucide-react';
 import InteractiveMap from '../../components/InteractiveMap';
 
+// DriverHome component: The core dashboard for drivers/riders to accept requests, verify passengers, and navigate.
 const DriverHome = () => {
+  // Extract driver-specific actions and variables from central MockDataContext.
   const { rides, activeRide, acceptRide, arriveAtPickup, startRide, endRide, submitDriverRating, currentUser, cancelRide } = useMockData();
+  
+  // REACT STATE HOOKS:
+  // - rating: Star rating value (1-5) selected for the passenger at the end of the trip.
+  // - enteredOtp: Stores the 4-digit code typed in by the driver to confirm the passenger.
+  // - otpError: Validation error message displayed if the entered OTP is incorrect.
   const [rating, setRating] = useState(5);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [otpError, setOtpError] = useState('');
   
+  // ACTIVE RIDE CONTEXT VIEW:
+  // If this driver is currently conducting an accepted/in-progress ride, show the navigation dashboard.
   if (activeRide && activeRide.status !== 'requested') {
-    // Determine Map Routing based on Ride Status
+    
+    // DYNAMIC MAP ROUTING LOGIC:
+    // We adjust the start and end coordinates shown on the map depending on the current ride status.
     let mapPickup = activeRide.pickup;
     let mapDropoff = activeRide.dropoff;
     let routingMessage = "Tracking Passenger...";
@@ -19,13 +30,15 @@ const DriverHome = () => {
     let mapDropoffCoords = null;
     
     if (activeRide.status === 'accepted') {
-      // Driver is routing TO the student pickup point
+      // PHASE A: Driver is traveling to pick up the student.
+      // The map route should start at the driver's 'Current Location' and end at the student's pickup point.
       mapPickup = 'Current Location';
       mapDropoff = activeRide.pickup;
       mapDropoffCoords = activeRide.pickupCoords;
       routingMessage = "Routing to Pickup...";
     } else {
-      // Driver is en route TO the dropoff point
+      // PHASE B: Student is inside the vehicle. En route to the destination.
+      // Route map from original student pickup coordinates to student destination.
       mapPickup = activeRide.pickup;
       mapDropoff = activeRide.dropoff;
       mapPickupCoords = activeRide.pickupCoords;
@@ -35,6 +48,8 @@ const DriverHome = () => {
 
     return (
       <div className="split-layout">
+        
+        {/* Map on Right (Desktop) / Top (Mobile) */}
         <div className="split-main">
           <div className="mock-map" style={{ position: 'relative' }}>
              <InteractiveMap 
@@ -51,8 +66,9 @@ const DriverHome = () => {
           </div>
         </div>
         
-      <div className="split-sidebar mobile-pull-up">
-        <div style={{
+        {/* Sidebar on Left (Desktop) / Bottom (Mobile) */}
+        <div className="split-sidebar mobile-pull-up">
+          <div style={{
             backgroundColor: 'rgba(128, 0, 32, 0.85)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
@@ -82,12 +98,14 @@ const DriverHome = () => {
               <p className="text-body-lg" style={{ fontWeight: 'bold', color: 'white' }}>Price: GH₵ {activeRide.price}</p>
             </div>
 
+            {/* FLOW 1: Driver Accepted. En Route to Pickup. */}
             {activeRide.status === 'accepted' && (
               <button className="btn btn-large" style={{ backgroundColor: 'white', color: 'var(--primary)', marginTop: 'var(--space-md)' }} onClick={() => arriveAtPickup(activeRide.id)}>
                 Arrived at Pickup
               </button>
             )}
 
+            {/* FLOW 2: Driver Arrived. Verifying OTP Code. */}
             {activeRide.status === 'arrived' && (
               <div className="flex-col gap-sm" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                 <p className="text-body-md-strong">Confirm Passenger</p>
@@ -104,15 +122,19 @@ const DriverHome = () => {
                   }}
                 />
                 {otpError && <p style={{ color: '#ffb3b3', fontSize: '12px', textAlign: 'center' }}>{otpError}</p>}
+                
+                {/* OTP Validation trigger button */}
                 <button 
                   className="btn btn-large" 
                   style={{ backgroundColor: 'white', color: 'var(--primary)' }}
                   onClick={() => {
+                    // Check if input matches code generated on request creation
                     if (enteredOtp === (activeRide.otp || '1234')) {
                        startRide(activeRide.id);
                        setEnteredOtp('');
                        
-                       // Open Google Maps
+                       // DYNAMIC GOOGLE MAPS ROUTE DEEP LINKING:
+                       // Auto-trigger navigation directions immediately after OTP verification.
                        const getCoordString = (coord, fallbackStr) => {
                          if (coord && Array.isArray(coord) && coord[0] !== undefined) return `${coord[0]},${coord[1]}`;
                          if (coord && coord.lat !== undefined) return `${coord.lat},${coord.lng}`;
@@ -147,12 +169,14 @@ const DriverHome = () => {
               </div>
             )}
             
+            {/* FLOW 3: Trip In Progress. Can be completed when driver reaches dropoff. */}
             {activeRide.status === 'in_progress' && (
               <button className="btn btn-large" style={{ backgroundColor: 'white', color: 'var(--primary)', marginTop: 'var(--space-md)' }} onClick={() => endRide(activeRide.id)}>
                 Complete {activeRide.type === 'parcel' ? 'Delivery' : 'Ride'}
               </button>
             )}
 
+            {/* FLOW 4: Rating passenger */}
             {activeRide.status === 'driver_rating' && (
               <div className="flex-col gap-sm text-center" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                 <p className="text-body-md-strong">Rate Passenger</p>
@@ -168,6 +192,7 @@ const DriverHome = () => {
               </div>
             )}
 
+            {/* FLOW 5: Waiting on payment completion from student device */}
             {activeRide.status === 'payment_pending' && (
               <div className="flex-col gap-sm text-center" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                 <p className="text-body-md-strong">Waiting for Payment...</p>
@@ -175,6 +200,7 @@ const DriverHome = () => {
               </div>
             )}
             
+            {/* Cancellation Option */}
             {(activeRide.status === 'accepted' || activeRide.status === 'arrived') && (
               <button 
                 className="btn btn-large w-full" 
@@ -194,20 +220,26 @@ const DriverHome = () => {
     );
   }
 
-  // Filter requests based on vehicle type
+  // DEFAULT VIEW: LIST PENDING RIDE REQUESTS
+  // 1. FILTER RIDES:
+  // Only display rides whose status is 'requested'.
+  // We also restrict 'parcel' requests to drivers registered as 'motor' (motorcycles),
+  // as standard car drivers do not deliver parcels in this campus model.
   const requestedRides = rides.filter(r => {
     if (r.status !== 'requested') return false;
-    // Motor riders have exclusive rights to parcels. Car drivers cannot see them.
     if (r.type === 'parcel' && currentUser.vehicleType !== 'motor') return false;
     return true;
   }).sort((a, b) => {
+    // 2. SOS PRIORITY SORTING:
+    // Sort emergency requests to the top of the list so drivers can address them instantly.
     if (a.type === 'emergency' && b.type !== 'emergency') return -1;
     if (a.type !== 'emergency' && b.type === 'emergency') return 1;
-    return 0; // fallback to original order
+    return 0;
   });
 
   return (
     <div className="split-layout">
+      {/* Map on Right */}
       <div className="split-main">
         <div className="mock-map" style={{ position: 'relative' }}>
            <InteractiveMap />
@@ -217,6 +249,7 @@ const DriverHome = () => {
         </div>
       </div>
       
+      {/* Sidebar showing matching pending requests */}
       <div className="split-sidebar mobile-pull-up">
         <div style={{
           backgroundColor: 'rgba(255, 255, 255, 0.75)',
@@ -238,6 +271,7 @@ const DriverHome = () => {
             ) : (
               requestedRides.map(ride => (
                 <div key={ride.id} className="flex-col gap-sm" style={{ 
+                  // Emergency cards get distinct light-red backgrounds and thick red side bars.
                   backgroundColor: ride.type === 'emergency' ? 'rgba(254, 242, 242, 0.8)' : 'rgba(255, 255, 255, 0.85)', 
                   borderLeft: ride.type === 'emergency' ? '6px solid var(--accent-red)' : ride.type === 'parcel' ? '4px solid var(--primary)' : '4px solid transparent', 
                   borderRadius: 'var(--radius-md)',
@@ -271,3 +305,4 @@ const DriverHome = () => {
 };
 
 export default DriverHome;
+
