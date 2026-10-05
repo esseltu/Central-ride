@@ -98,13 +98,6 @@ function App() {
       {/* TOP NAVIGATION BAR: Renders on desktop screens */}
       <TopNav />
       
-      {/* ROLE SWITCHER / LOGOUT BUTTON:
-          Only visible on mobile screens (`mobile-only` CSS class) and hidden when viewing the profile page.
-      */}
-      <div className="mobile-only">
-        {location.pathname !== '/profile' && <RoleSwitcher />}
-      </div>
-      
       {/* ROLE-BASED PAGE ROUTING:
           We conditionally load routes depending on the user's role: 'student', 'driver'/'rider', or 'admin'.
           If they try to go to a URL they aren't authorized to access, `*` redirects them to `/` (home).

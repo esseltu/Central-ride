@@ -56,8 +56,8 @@ const AdminDashboard = () => {
         </div>
         
         {/* Card 4: SOS Alerts */}
-        <div className="card flex-row items-center gap-md" style={{ borderLeft: alerts.length > 0 ? '4px solid var(--accent-red)' : 'none' }}>
-          <div className="btn-icon flex-col justify-center items-center"><AlertCircle size={20} color={alerts.length > 0 ? 'var(--accent-red)' : 'var(--ink)'} /></div>
+        <div className="card flex-row items-center gap-md" style={{ borderLeft: alerts.length > 0 ? '4px solid var(--status-sos)' : 'none' }}>
+          <div className="btn-icon flex-col justify-center items-center"><AlertCircle size={20} color={alerts.length > 0 ? 'var(--status-sos)' : 'var(--ink)'} /></div>
           <div>
             <p className="text-body-sm">SOS Alerts</p>
             <p className="text-display-md">{alerts.length}</p>
@@ -72,8 +72,8 @@ const AdminDashboard = () => {
         <div>
           <h2 className="text-display-md" style={{ marginBottom: 'var(--space-md)' }}>Active Alerts</h2>
           {alerts.map(alert => (
-            <div key={alert.id} className="card-soft mb-2" style={{ border: '1px solid var(--accent-red)', backgroundColor: '#fef2f2' }}>
-              <p className="text-body-md-strong" style={{ color: 'var(--accent-red)' }}>SOS: {alert.userName} ({alert.role})</p>
+            <div key={alert.id} className="card-soft mb-2" style={{ border: '1px solid var(--status-sos)', backgroundColor: 'var(--canvas-soft)' }}>
+              <p className="text-body-md-strong" style={{ color: 'var(--status-sos)' }}>SOS: {alert.userName} ({alert.role})</p>
               <p className="text-body-sm">Location: {alert.location}</p>
               <p className="text-body-sm">Time: {new Date(alert.time).toLocaleTimeString()}</p>
             </div>
@@ -98,9 +98,9 @@ const AdminDashboard = () => {
             <h2 className="text-display-md text-center" style={{ marginBottom: 'var(--space-md)' }}>View Ratings</h2>
             
             {/* Navigates to subroutes corresponding to different roles */}
-            <button className="btn btn-secondary" onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/student'); }}>Students</button>
-            <button className="btn btn-secondary" onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/driver'); }}>Drivers (Car)</button>
-            <button className="btn btn-secondary" onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/rider'); }}>Riders (Motor)</button>
+            <button className="btn w-full" style={{ minHeight: '44px', borderRadius: 'var(--radius-pill)', backgroundColor: 'var(--canvas-soft)', border: 'none', cursor: 'pointer' }} onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/student'); }}>Students</button>
+            <button className="btn w-full" style={{ minHeight: '44px', borderRadius: 'var(--radius-pill)', backgroundColor: 'var(--canvas-soft)', border: 'none', cursor: 'pointer' }} onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/driver'); }}>Drivers (Car)</button>
+            <button className="btn w-full" style={{ minHeight: '44px', borderRadius: 'var(--radius-pill)', backgroundColor: 'var(--canvas-soft)', border: 'none', cursor: 'pointer' }} onClick={() => { setShowRatingModal(false); navigate('/admin/ratings/rider'); }}>Riders (Motor)</button>
           </div>
         </div>
       )}

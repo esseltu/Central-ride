@@ -24,51 +24,61 @@ const Login = () => {
     }
   };
 
+  const textShadowStyle = { textShadow: '0 1px 2px rgba(0,0,0,0.4)' };
+
   return (
     <div style={{ 
       flex: 1, 
       display: 'flex', 
       flexDirection: 'column', 
       padding: 'var(--space-2xl)',
-      background: 'linear-gradient(135deg, var(--canvas) 0%, var(--canvas-soft) 100%)',
-      minHeight: '100vh'
+      backgroundImage: `linear-gradient(var(--login-overlay), var(--login-overlay)), var(--login-bg-image)`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      minHeight: '100dvh'
     }}>
       <div style={{ marginTop: 'auto', marginBottom: 'auto', maxWidth: '400px', width: '100%', alignSelf: 'center' }}>
         
         {/* Top Header Section */}
         <div style={{ textAlign: 'center', marginBottom: 'var(--space-2xl)' }}>
-          <img src="/logo.png" alt="Central Ride Logo" style={{ width: '80px', marginBottom: 'var(--space-md)', borderRadius: '16px', boxShadow: 'var(--shadow-2)' }} />
-          <h1 className="text-display-lg" style={{ color: 'var(--primary)' }}>Central Ride</h1>
-          <p className="text-body-lg">The smart campus transit system.</p>
+          <img src="/logo.png" alt="Central Ride Logo" style={{ width: '80px', marginBottom: 'var(--space-md)' }} />
+          <h1 className="text-display-lg" style={{ color: 'var(--on-dark)' }}>Central Ride</h1>
+          <p className="text-body-lg" style={{ color: 'var(--on-dark)' }}>The smart campus transit system.</p>
         </div>
 
         {/* Login Card */}
-        <div className="card" style={{ 
-          background: 'rgba(255, 255, 255, 0.7)', 
-          backdropFilter: 'blur(10px)', // Blurs the background content behind the card (Glassmorphism)
-          border: '1px solid rgba(255,255,255,0.8)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
-        }}>
-          <h2 className="text-body-lg text-center" style={{ marginBottom: 'var(--space-lg)' }}>Sign in to continue</h2>
+        <div className="login-glass-card" style={{ padding: 'var(--space-2xl)' }}>
+          <h2 className="text-body-lg text-center" style={{ color: 'var(--on-dark)', marginBottom: 'var(--space-lg)', ...textShadowStyle }}>
+            Sign in to continue
+          </h2>
           
-          {/* Role selector buttons:
-              Updates the local `role` state when clicked.
-              We use a template literal (backticks) to dynamically toggle the styling class
-              between `btn-primary` (active color) and `btn-secondary` (inactive gray).
-          */}
+          {/* Role selector buttons */}
           <div className="flex-col gap-sm" style={{ marginBottom: 'var(--space-xl)' }}>
-             <p className="text-body-sm-strong" style={{ color: 'var(--body)' }}>I am a...</p>
+             <p className="text-body-sm-strong" style={{ color: 'var(--on-dark)', ...textShadowStyle }}>I am a...</p>
              <div style={{ display: 'flex', gap: '8px' }}>
                 <button 
-                  className={`btn ${role === 'student' ? 'btn-primary' : 'btn-secondary'}`} 
-                  style={{ flex: 1, padding: '8px' }}
+                  className="btn" 
+                  style={{ 
+                    flex: 1, 
+                    padding: '8px', 
+                    backgroundColor: role === 'student' ? '#ffffff' : 'transparent',
+                    color: role === 'student' ? '#000000' : '#ffffff',
+                    border: role === 'student' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.4)',
+                  }}
                   onClick={() => setRole('student')}
                 >
                   Student
                 </button>
                 <button 
-                  className={`btn ${role === 'driver' ? 'btn-primary' : 'btn-secondary'}`} 
-                  style={{ flex: 1, padding: '8px' }}
+                  className="btn" 
+                  style={{ 
+                    flex: 1, 
+                    padding: '8px', 
+                    backgroundColor: role === 'driver' ? '#ffffff' : 'transparent',
+                    color: role === 'driver' ? '#000000' : '#ffffff',
+                    border: role === 'driver' ? '1px solid #ffffff' : '1px solid rgba(255,255,255,0.4)',
+                  }}
                   onClick={() => setRole('driver')}
                 >
                   Driver
@@ -76,22 +86,24 @@ const Login = () => {
              </div>
           </div>
 
-          {/* Conditional Rendering: Only render the paragraph tag if an error is present. */}
-          {error && <p style={{ color: 'var(--accent-red)', fontSize: '14px', marginBottom: 'var(--space-md)', textAlign: 'center' }}>{error}</p>}
+          {/* Conditional Rendering */}
+          {error && <p style={{ color: 'var(--status-sos)', fontSize: '14px', marginBottom: 'var(--space-md)', textAlign: 'center' }}>{error}</p>}
 
           {/* Google Login Trigger Button */}
           <button 
             className="btn btn-large" 
             onClick={handleGoogleSignIn}
             style={{ 
-              backgroundColor: '#fff', 
-              color: '#333', 
-              border: '1px solid #ccc',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+              backgroundColor: '#ffffff', 
+              color: '#000000', 
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '12px'
+              gap: '12px',
+              borderRadius: 'var(--radius-pill)',
+              minHeight: '44px',
+              width: '100%'
             }}
           >
             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '24px' }} />

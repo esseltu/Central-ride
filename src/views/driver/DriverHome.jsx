@@ -69,50 +69,49 @@ const DriverHome = () => {
         {/* Sidebar on Left (Desktop) / Bottom (Mobile) */}
         <div className="split-sidebar mobile-pull-up">
           <div style={{
-            backgroundColor: 'rgba(128, 0, 32, 0.85)',
-            backdropFilter: 'blur(16px)',
-            WebkitBackdropFilter: 'blur(16px)',
-            borderRadius: 'var(--radius-xl)',
+            backgroundColor: 'white',
+            borderRadius: '16px 16px 0 0',
             padding: 'var(--space-xl)',
-            color: 'white',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.25)',
-            border: '1px solid rgba(255,255,255,0.1)',
+            color: 'var(--ink)',
+            boxShadow: '0 -4px 16px rgba(0,0,0,0.16)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 'var(--space-sm)'
+            gap: 'var(--space-sm)',
+            maxHeight: '60dvh',
+            overflowY: 'auto'
           }}>
-            <h1 className="text-display-md mb-2" style={{ color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 'var(--space-sm)' }}>
+            <h1 className="text-display-md mb-2" style={{ color: 'var(--ink)', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 'var(--space-sm)' }}>
               Active {activeRide.type === 'parcel' ? 'Delivery' : 'Ride'}
             </h1>
             
             <div className="flex-col gap-sm" style={{ marginTop: 'var(--space-sm)' }}>
               <p className="text-body-md">Passenger: <strong>{activeRide.studentName}</strong></p>
-              <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>From: {activeRide.pickup}</p>
+              <p className="text-body-sm" style={{ color: 'var(--body)' }}>From: {activeRide.pickup}</p>
               
               {activeRide.stops && activeRide.stops.map((stop, idx) => (
-                 <p key={idx} className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>Stop {idx + 1}: {stop}</p>
+                 <p key={idx} className="text-body-sm" style={{ color: 'var(--body)' }}>Stop {idx + 1}: {stop}</p>
               ))}
               
-              <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>To: {activeRide.dropoff}</p>
-              <p className="text-body-sm" style={{ color: 'white' }}>Type: <strong style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '12px' }}>{activeRide.type.toUpperCase()}</strong></p>
-              <p className="text-body-lg" style={{ fontWeight: 'bold', color: 'white' }}>Price: GH₵ {activeRide.price}</p>
+              <p className="text-body-sm" style={{ color: 'var(--body)' }}>To: {activeRide.dropoff}</p>
+              <p className="text-body-sm" style={{ color: 'var(--ink)' }}>Type: <strong style={{ backgroundColor: 'var(--canvas-soft)', padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>{activeRide.type.toUpperCase()}</strong></p>
+              <p className="text-body-lg" style={{ fontWeight: 'bold', color: 'var(--ink)' }}>Price: GH₵ {activeRide.price}</p>
             </div>
 
             {/* FLOW 1: Driver Accepted. En Route to Pickup. */}
             {activeRide.status === 'accepted' && (
-              <button className="btn btn-large" style={{ backgroundColor: 'white', color: 'var(--primary)', marginTop: 'var(--space-md)' }} onClick={() => arriveAtPickup(activeRide.id)}>
+              <button className="btn btn-large w-full" style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', marginTop: 'var(--space-md)', borderRadius: 'var(--radius-pill)' }} onClick={() => arriveAtPickup(activeRide.id)}>
                 Arrived at Pickup
               </button>
             )}
 
             {/* FLOW 2: Driver Arrived. Verifying OTP Code. */}
             {activeRide.status === 'arrived' && (
-              <div className="flex-col gap-sm" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
+              <div className="flex-col gap-sm" style={{ backgroundColor: 'var(--canvas-soft)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                 <p className="text-body-md-strong">Confirm Passenger</p>
-                <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>Ask the passenger for their 4-digit OTP code to start.</p>
+                <p className="text-body-sm" style={{ color: 'var(--body)' }}>Ask the passenger for their 4-digit OTP code to start.</p>
                 <input 
                   className="input-field" 
-                  style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '24px', padding: 'var(--space-sm)', backgroundColor: 'rgba(255,255,255,0.9)', color: 'var(--ink)' }} 
+                  style={{ textAlign: 'center', letterSpacing: '8px', fontSize: '24px', padding: 'var(--space-sm)', backgroundColor: 'white', color: 'var(--ink)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(0,0,0,0.1)' }} 
                   placeholder="----" 
                   maxLength={4}
                   value={enteredOtp}
@@ -121,12 +120,12 @@ const DriverHome = () => {
                     setOtpError('');
                   }}
                 />
-                {otpError && <p style={{ color: '#ffb3b3', fontSize: '12px', textAlign: 'center' }}>{otpError}</p>}
+                {otpError && <p style={{ color: 'var(--status-sos)', fontSize: '12px', textAlign: 'center' }}>{otpError}</p>}
                 
                 {/* OTP Validation trigger button */}
                 <button 
-                  className="btn btn-large" 
-                  style={{ backgroundColor: 'white', color: 'var(--primary)' }}
+                  className="btn btn-large w-full" 
+                  style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', borderRadius: 'var(--radius-pill)' }}
                   onClick={() => {
                     // Check if input matches code generated on request creation
                     if (enteredOtp === (activeRide.otp || '1234')) {
@@ -171,22 +170,22 @@ const DriverHome = () => {
             
             {/* FLOW 3: Trip In Progress. Can be completed when driver reaches dropoff. */}
             {activeRide.status === 'in_progress' && (
-              <button className="btn btn-large" style={{ backgroundColor: 'white', color: 'var(--primary)', marginTop: 'var(--space-md)' }} onClick={() => endRide(activeRide.id)}>
+              <button className="btn btn-large w-full" style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', marginTop: 'var(--space-md)', borderRadius: 'var(--radius-pill)' }} onClick={() => endRide(activeRide.id)}>
                 Complete {activeRide.type === 'parcel' ? 'Delivery' : 'Ride'}
               </button>
             )}
 
             {/* FLOW 4: Rating passenger */}
             {activeRide.status === 'driver_rating' && (
-              <div className="flex-col gap-sm text-center" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
+              <div className="flex-col gap-sm text-center" style={{ backgroundColor: 'var(--canvas-soft)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                 <p className="text-body-md-strong">Rate Passenger</p>
-                <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>How was {activeRide.studentName}?</p>
+                <p className="text-body-sm" style={{ color: 'var(--body)' }}>How was {activeRide.studentName}?</p>
                 <div className="flex-row justify-center gap-sm" style={{ margin: 'var(--space-sm) 0' }}>
                   {[1, 2, 3, 4, 5].map(star => (
-                    <Star key={star} size={32} fill={star <= rating ? '#ffd700' : 'none'} color={star <= rating ? '#ffd700' : 'rgba(255,255,255,0.3)'} onClick={() => setRating(star)} style={{ cursor: 'pointer' }} />
+                    <Star key={star} size={32} fill={star <= rating ? 'var(--ink)' : 'none'} color={star <= rating ? 'var(--ink)' : 'rgba(0,0,0,0.3)'} onClick={() => setRating(star)} style={{ cursor: 'pointer' }} />
                   ))}
                 </div>
-                <button className="btn btn-large" style={{ backgroundColor: 'white', color: 'var(--primary)' }} onClick={() => submitDriverRating(activeRide.id, rating)}>
+                <button className="btn btn-large w-full" style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', borderRadius: 'var(--radius-pill)' }} onClick={() => submitDriverRating(activeRide.id, rating)}>
                   Submit Rating
                 </button>
               </div>
@@ -194,9 +193,9 @@ const DriverHome = () => {
 
             {/* FLOW 5: Waiting on payment completion from student device */}
             {activeRide.status === 'payment_pending' && (
-              <div className="flex-col gap-sm text-center" style={{ backgroundColor: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
+              <div className="flex-col gap-sm text-center" style={{ backgroundColor: 'var(--canvas-soft)', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 'var(--radius-md)', padding: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
                 <p className="text-body-md-strong">Waiting for Payment...</p>
-                <p className="text-body-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>The passenger is completing the MoMo payment.</p>
+                <p className="text-body-sm" style={{ color: 'var(--body)' }}>The passenger is completing the MoMo payment.</p>
               </div>
             )}
             
@@ -204,7 +203,7 @@ const DriverHome = () => {
             {(activeRide.status === 'accepted' || activeRide.status === 'arrived') && (
               <button 
                 className="btn btn-large w-full" 
-                style={{ backgroundColor: 'transparent', color: 'white', border: '1px solid rgba(255,255,255,0.5)', marginTop: 'var(--space-xs)' }} 
+                style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid rgba(0,0,0,0.2)', marginTop: 'var(--space-xs)', borderRadius: 'var(--radius-pill)' }} 
                 onClick={() => {
                   if (window.confirm("Are you sure you want to cancel this ride?")) {
                     cancelRide(activeRide.id);
@@ -252,16 +251,15 @@ const DriverHome = () => {
       {/* Sidebar showing matching pending requests */}
       <div className="split-sidebar mobile-pull-up">
         <div style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.75)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          borderRadius: 'var(--radius-xl)',
+          backgroundColor: 'white',
+          borderRadius: '16px 16px 0 0',
           padding: 'var(--space-xl)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          border: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.16)',
           display: 'flex',
           flexDirection: 'column',
-          gap: 'var(--space-md)'
+          gap: 'var(--space-md)',
+          maxHeight: '60dvh',
+          overflowY: 'auto'
         }}>
           <h1 className="text-display-lg" style={{ marginBottom: 'var(--space-sm)' }}>Requests</h1>
           
@@ -271,17 +269,15 @@ const DriverHome = () => {
             ) : (
               requestedRides.map(ride => (
                 <div key={ride.id} className="flex-col gap-sm" style={{ 
-                  // Emergency cards get distinct light-red backgrounds and thick red side bars.
-                  backgroundColor: ride.type === 'emergency' ? 'rgba(254, 242, 242, 0.8)' : 'rgba(255, 255, 255, 0.85)', 
-                  borderLeft: ride.type === 'emergency' ? '6px solid var(--accent-red)' : ride.type === 'parcel' ? '4px solid var(--primary)' : '4px solid transparent', 
+                  backgroundColor: 'var(--canvas-soft)', 
+                  borderLeft: ride.type === 'emergency' ? '6px solid var(--status-sos)' : ride.type === 'parcel' ? '4px solid var(--ink)' : '4px solid transparent', 
                   borderRadius: 'var(--radius-md)',
                   padding: 'var(--space-md)',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.8)'
+                  border: '1px solid rgba(0,0,0,0.1)'
                 }}>
                   <div className="flex-row justify-between items-center">
-                    <p className="text-body-md-strong" style={{ color: ride.type === 'emergency' ? 'var(--accent-red)' : 'var(--ink)' }}>{ride.studentName}</p>
-                    <span className="text-body-sm-strong" style={{ backgroundColor: ride.type === 'emergency' ? 'var(--accent-red)' : 'var(--canvas-soft)', color: ride.type === 'emergency' ? 'white' : 'var(--ink)', padding: '4px 12px', borderRadius: '16px' }}>
+                    <p className="text-body-md-strong" style={{ color: ride.type === 'emergency' ? 'var(--status-sos)' : 'var(--ink)' }}>{ride.studentName}</p>
+                    <span className="text-body-sm-strong" style={{ backgroundColor: ride.type === 'emergency' ? 'var(--status-sos)' : 'var(--ink)', color: 'var(--on-dark)', padding: '4px 12px', borderRadius: 'var(--radius-pill)' }}>
                       {ride.type.toUpperCase()}
                     </span>
                   </div>
@@ -289,8 +285,8 @@ const DriverHome = () => {
                   {ride.stops && ride.stops.length > 0 && <p className="text-body-sm" style={{ fontStyle: 'italic', color: 'var(--body)' }}>+ {ride.stops.length} stop(s)</p>}
                   <p className="text-body-sm" style={{ color: 'var(--body)' }}>To: {ride.dropoff}</p>
                   <div className="flex-row justify-between items-center mt-auto" style={{ marginTop: 'var(--space-xs)' }}>
-                    <span className="text-body-lg" style={{ color: ride.type === 'emergency' ? 'var(--accent-red)' : 'var(--primary)', fontWeight: 'bold' }}>GH₵ {ride.price}</span>
-                    <button className="btn btn-primary" style={{ padding: '8px 24px', borderRadius: '24px', backgroundColor: ride.type === 'emergency' ? 'var(--accent-red)' : 'var(--primary)' }} onClick={() => acceptRide(ride.id)}>
+                    <span className="text-body-lg" style={{ color: ride.type === 'emergency' ? 'var(--status-sos)' : 'var(--ink)', fontWeight: 'bold' }}>GH₵ {ride.price}</span>
+                    <button className="btn btn-primary" style={{ padding: '12px 24px', borderRadius: 'var(--radius-pill)', backgroundColor: ride.type === 'emergency' ? 'var(--status-sos)' : 'var(--ink)', color: 'var(--on-dark)', minHeight: '44px', fontWeight: 'bold' }} onClick={() => acceptRide(ride.id)}>
                       Accept
                     </button>
                   </div>

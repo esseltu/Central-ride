@@ -3,26 +3,24 @@ import React from 'react';
 // Splash component displays a loading screen when the app starts up or checks login state.
 const Splash = () => {
   return (
-    // Style attributes in React use JS objects (e.g. flex: 1, flexDirection: 'column').
-    // We use CSS variables like `var(--primary)` which are defined in `src/index.css`.
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', backgroundColor: 'var(--primary)' }}>
-      
-      {/* Pulse Animation Container: 
-          Uses a custom CSS keyframe animation defined at the bottom of this file.
-      */}
-      <div style={{ animation: 'pulse 2s infinite', display: 'flex', justifyContent: 'center', backgroundColor: 'var(--canvas)', borderRadius: 'var(--radius-pill)', padding: 'var(--space-md)' }}>
-        <img src="/logo.png" alt="Central Ride Logo" style={{ width: '80px', height: 'auto', objectFit: 'contain' }} />
+    <div style={{
+      flex: 1, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      justifyContent: 'center', 
+      alignItems: 'center', 
+      backgroundColor: 'var(--ink)',
+      height: '100vh'
+    }}>
+      <div style={{ animation: 'fade-in 1.5s ease-out forwards', opacity: 0, textAlign: 'center' }}>
+        <img src="/logo.png" alt="Central Ride Logo" style={{ width: '64px', height: '64px', marginBottom: 'var(--space-md)', filter: 'invert(1)' }} />
+        <h1 className="text-display-lg" style={{ color: 'var(--on-dark)' }}>Central Ride</h1>
       </div>
       
-      <h2 style={{ color: 'var(--on-primary)', marginTop: 'var(--space-md)', fontWeight: 500 }}>Central Ride</h2>
-      <p style={{ color: 'rgba(255,255,255,0.8)', marginTop: 'var(--space-sm)' }}>Secure Smart Campus Transportation</p>
-      
-      {/* React allows injecting normal CSS directly inside a component using `<style>` tags. */}
       <style>{`
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
+        @keyframes fade-in {
+          0% { opacity: 0; transform: translateY(10px); }
+          100% { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

@@ -1,27 +1,29 @@
 import React from 'react';
 import { useMockData } from '../../context/MockDataContext';
+import { TrendingUp, CalendarDays } from 'lucide-react';
 
-// DriverEarnings component displays simple cards showing the logged-in driver's earnings totals.
 const DriverEarnings = () => {
-  // Pull computed earnings values from MockDataContext.
   const { earnings } = useMockData();
 
   return (
-    // Top padding uses `calc` to prevent the floating desktop TopNav from overlapping the title text.
-    <div style={{ padding: 'calc(var(--space-xl) + 64px) var(--space-xl) var(--space-xl) var(--space-xl)', minHeight: '100vh', backgroundColor: 'var(--canvas)' }}>
-      <div className="card" style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ padding: 'calc(var(--space-xl) + 64px) var(--space-xl) var(--space-xl) var(--space-xl)', minHeight: '100dvh', backgroundColor: 'var(--canvas)' }}>
+      <div style={{ maxWidth: '600px', margin: '0 auto' }}>
         <h1 className="text-display-lg" style={{ marginBottom: 'var(--space-xl)', color: 'var(--ink)' }}>My Earnings</h1>
         
         <div className="flex-col gap-md">
-          {/* Today's Earnings Card (Styled with primary brand color) */}
-          <div className="card-soft" style={{ backgroundColor: 'var(--primary)', color: 'white', border: '1px solid var(--surface-pressed)' }}>
-            <p className="text-body-md mb-2" style={{ opacity: 0.9 }}>Today's Total</p>
+          <div style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', borderRadius: 'var(--radius-md)', padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: 0.8 }}>
+              <TrendingUp size={20} />
+              <p className="text-body-md">Today's Total</p>
+            </div>
             <p className="text-display-xl" style={{ fontWeight: 'bold' }}>GH₵ {earnings.today}</p>
           </div>
           
-          {/* Weekly Earnings Card */}
-          <div className="card-soft" style={{ backgroundColor: 'var(--canvas-soft)', border: '1px solid var(--surface-pressed)' }}>
-            <p className="text-body-md mb-2" style={{ color: 'var(--body)' }}>This Week</p>
+          <div style={{ backgroundColor: 'var(--canvas-soft)', borderRadius: 'var(--radius-md)', padding: 'var(--space-xl)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ink)', opacity: 0.6 }}>
+              <CalendarDays size={20} />
+              <p className="text-body-md">This Week</p>
+            </div>
             <p className="text-display-lg" style={{ color: 'var(--ink)', fontWeight: 'bold' }}>GH₵ {earnings.week}</p>
           </div>
         </div>

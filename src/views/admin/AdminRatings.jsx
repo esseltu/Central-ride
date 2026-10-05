@@ -56,8 +56,8 @@ const AdminRatings = () => {
             <div key={user.id} className="card flex-col gap-sm">
               <div className="flex-row justify-between items-center">
                 <p className="text-body-md-strong">{user.name}</p>
-                <span className="flex-row items-center gap-xs text-body-sm-strong" style={{ color: 'var(--primary)' }}>
-                  <Star size={14} fill="var(--primary)" /> {user.rating.toFixed(1)}
+                <span className="flex-row items-center gap-xs text-body-sm-strong" style={{ color: 'var(--ink)' }}>
+                  <Star size={14} fill="var(--ink)" /> {user.rating.toFixed(1)}
                 </span>
               </div>
               
@@ -65,11 +65,11 @@ const AdminRatings = () => {
                   Visualizes user's score out of 5 by setting the width as a percentage: `(user.rating / 5) * 100`.
                   Colors the bar: Primary red/burgundy if >=4, Orange if >=3, Crimson/Red if low.
               */}
-              <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--surface-pressed)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: '100%', height: '8px', backgroundColor: 'var(--canvas-soft)', borderRadius: 'var(--radius-pill)', overflow: 'hidden', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <div style={{ 
                   height: '100%', 
                   width: `${(user.rating / 5) * 100}%`, 
-                  backgroundColor: user.rating >= 4.0 ? 'var(--primary)' : user.rating >= 3.0 ? '#f59e0b' : 'var(--accent-red)',
+                  backgroundColor: 'var(--ink)',
                   transition: 'width 0.3s ease'
                 }} />
               </div>
