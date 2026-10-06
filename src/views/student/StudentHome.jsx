@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMockData } from '../../context/MockDataContext';
 import { MapPin, Navigation as NavigationIcon, ShieldAlert, Plus, X, Car, Package, Star, LocateFixed, Map as MapIcon } from 'lucide-react';
 import InteractiveMap from '../../components/InteractiveMap';
-import { CAMPUS_CENTER, CAMPUS_PLACES, calculateDistance } from '../../constants/campus';
+import { CAMPUS_CENTER, CAMPUS_PLACES, calculateDistance, SHOW_LOCATION_WARNING } from '../../constants/campus';
 
 const StudentHome = () => {
   const { activeRide, requestRide, triggerSOS, confirmPayment, submitStudentRating, cancelRide } = useMockData();
@@ -25,12 +25,36 @@ const StudentHome = () => {
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [geocodeError, setGeocodeError] = useState('');
   const [gpsWarning, setGpsWarning] = useState(false);
+  const [gpsAccuracy, setGpsAccuracy] = useState(null);
+  const [isSharingLocation, setIsSharingLocation] = useState(true);
+  
+  const lastLocationUpdateRef = React.useRef(0);
+  const lastLocationCoordsRef = React.useRef(null);
   
   React.useEffect(() => {
     if (import.meta.env.DEV && CAMPUS_CENTER[0] === 0 && CAMPUS_CENTER[1] === 0) {
       console.warn("DEV WARNING: CAMPUS_CENTER is [0, 0]. Please set it in src/constants/campus.js.");
     }
   }, []);
+
+  const { updateStudentLocation } = useMockData();
+
+  React.useEffect(() => {
+    if (isSharingLocation && activeRide && (activeRide.status === 'accepted' || activeRide.status === 'arrived')) {
+      const watchId = navigator.geolocation.watchPosition((pos) => {
+        const now = Date.now();
+        const { latitude, longitude } = pos.coords;
+        if (now - lastLocationUpdateRef.current > 10000) {
+          if (!lastLocationCoordsRef.current || calculateDistance(latitude, longitude, lastLocationCoordsRef.current[0], lastLocationCoordsRef.current[1]) > 0.015) {
+            updateStudentLocation(activeRide.id, latitude, longitude);
+            lastLocationUpdateRef.current = now;
+            lastLocationCoordsRef.current = [latitude, longitude];
+          }
+        }
+      }, () => {}, { enableHighAccuracy: true });
+      return () => navigator.geolocation.clearWatch(watchId);
+    }
+  }, [isSharingLocation, activeRide?.status, activeRide?.id, updateStudentLocation]);
   
   // Search Autocomplete states
   const [activeSearch, setActiveSearch] = useState(null); // 'pickup' | 'dropoff' | number
@@ -308,6 +332,13 @@ const StudentHome = () => {
              pickupCoords={activeRide.pickupCoords} 
              dropoffCoords={activeRide.dropoffCoords} 
              stops={activeRide.stops || []}
+             startMarkerLabel={`Pickup: ${activeRide.pickupName || activeRide.pickup}`}
+             startMarkerKind="pickup"
+             endMarkerLabel={`Destination: ${activeRide.dropoff}`}
+             endMarkerKind="destination"
+             studentMarkerLabel="You"
+             driverCoords={activeRide.driverLat ? [activeRide.driverLat, activeRide.driverLng] : null}
+             driverMarkerLabel={activeRide.driverName || 'Your driver'}
            />
         </div>
         
@@ -327,53 +358,60 @@ const StudentHome = () => {
           zIndex: 10 
         }}>
           <h2 className="text-display-md mb-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 'var(--space-sm)' }}>
-            {activeRide.type === 'parcel' ? 'Parcel Delivery ' : 'Ride '} 
-            {activeRide.status === 'requested' ? 'Requested' : activeRide.status === 'in_progress' ? 'In Progress' : activeRide.status === 'arrived' ? 'Arrived' : 'Accepted'}
+            {activeRide?.type === 'parcel' ? 'Parcel Delivery ' : 'Ride '} 
+            {{
+              'requested': 'Requested',
+              'accepted': 'Accepted',
+              'arrived': 'Arrived',
+              'in_progress': 'In Progress',
+              'completed': 'Completed',
+              'cancelled': 'Cancelled',
+            }[activeRide?.status] || 'Updating...'}
           </h2>
           
           <div className="flex-col gap-md" style={{ marginTop: 'var(--space-md)' }}>
              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                <span style={{ color: 'var(--body)', fontSize: '14px' }}>Status</span>
-               <strong style={{ letterSpacing: '1px' }}>{activeRide.status.replace('_', ' ').toUpperCase()}</strong>
+               <strong style={{ letterSpacing: '1px' }}>{(activeRide?.status || 'updating').replace('_', ' ').toUpperCase()}</strong>
              </div>
 
-             {activeRide.driverName && (
+             {(activeRide?.status !== 'requested' && activeRide?.status !== 'cancelled') && (
                <>
                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                   <span style={{ color: 'var(--body)', fontSize: '14px' }}>{activeRide.driverType === 'motor' ? 'Rider' : 'Driver'}</span>
-                   <strong>{activeRide.driverName}</strong>
+                   <span style={{ color: 'var(--body)', fontSize: '14px' }}>{activeRide?.driverType === 'motor' ? 'Rider' : 'Driver'}</span>
+                   <strong>{activeRide?.driverName ?? 'Your driver'}</strong>
                  </div>
-                 {(activeRide.driverCar || activeRide.driverPlate) && (
+                 {(activeRide?.driverCar || activeRide?.driverPlate) && (
                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-xs)' }}>
                      <span style={{ color: 'var(--body)', fontSize: '14px' }}>Vehicle</span>
                      <div style={{ textAlign: 'right' }}>
-                       {activeRide.driverCar && <strong style={{ display: 'block', fontSize: '14px' }}>{activeRide.driverCar}</strong>}
-                       {activeRide.driverPlate && <span style={{ display: 'inline-block', backgroundColor: 'var(--canvas-soft)', color: 'var(--ink)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{activeRide.driverPlate}</span>}
+                       {activeRide?.driverCar && <strong style={{ display: 'block', fontSize: '14px' }}>{activeRide.driverCar}</strong>}
+                       {activeRide?.driverPlate && <span style={{ display: 'inline-block', backgroundColor: 'var(--canvas-soft)', color: 'var(--ink)', padding: '2px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', marginTop: '4px' }}>{activeRide.driverPlate}</span>}
                      </div>
                    </div>
                  )}
                </>
              )}
 
-             {activeRide.status === 'accepted' && (
+             {activeRide?.status === 'accepted' && (
                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                  <span style={{ color: 'var(--body)', fontSize: '14px' }}>ETA</span>
-                 <strong>4 mins</strong>
+                 <strong>{activeRide?.eta ?? '4 mins'}</strong>
                </div>
              )}
 
-             {activeRide.status === 'arrived' && (
+             {activeRide?.status === 'arrived' && (
                <div style={{ padding: 'var(--space-sm) 0', textAlign: 'center', backgroundColor: 'var(--status-in-progress)', color: 'white', borderRadius: 'var(--radius-md)' }}>
-                 <strong>{activeRide.driverType === 'motor' ? 'Rider' : 'Driver'} is outside!</strong>
+                 <strong>{activeRide?.driverType === 'motor' ? 'Rider' : 'Driver'} is outside!</strong>
                </div>
              )}
 
              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--canvas-soft)', padding: 'var(--space-md)', borderRadius: 'var(--radius-md)' }}>
                <span style={{ color: 'var(--body)', fontSize: '14px' }}>OTP Code</span>
-               <strong style={{ fontSize: '24px', letterSpacing: '6px' }}>{activeRide.otp || '1234'}</strong>
+               <strong style={{ fontSize: '24px', letterSpacing: '6px' }}>{activeRide?.otp ?? '1234'}</strong>
              </div>
              
-             {activeRide.stops && activeRide.stops.length > 0 && (
+             {activeRide?.stops && activeRide.stops.length > 0 && (
                <div style={{ marginTop: 'var(--space-xs)' }}>
                  <span style={{ color: 'var(--body)', fontSize: '14px' }}>Stops</span>
                  {activeRide.stops.map((stop, idx) => (
@@ -381,15 +419,21 @@ const StudentHome = () => {
                  ))}
                </div>
              )}
+             {isSharingLocation && (activeRide?.status === 'accepted' || activeRide?.status === 'arrived') && (
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.05)', padding: 'var(--space-sm)', borderRadius: 'var(--radius-md)' }}>
+                 <span style={{ color: 'var(--body)', fontSize: '12px' }}>Sharing your location with your driver until pickup.</span>
+                 <button onClick={() => setIsSharingLocation(false)} style={{ background: 'none', border: 'none', color: 'var(--ink)', textDecoration: 'underline', fontSize: '12px', cursor: 'pointer', padding: 0 }}>Stop sharing</button>
+               </div>
+             )}
           </div>
 
-          {(activeRide.status === 'in_progress' || activeRide.status === 'accepted' || activeRide.status === 'arrived') && (
+          {(activeRide?.status === 'in_progress' || activeRide?.status === 'accepted' || activeRide?.status === 'arrived') && (
             <button 
               className="btn btn-large w-full" 
               style={{ backgroundColor: 'var(--ink)', color: 'white', marginTop: 'var(--space-md)', borderRadius: 'var(--radius-pill)' }} 
               onClick={openGoogleMaps}
             >
-              <Map size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }}/>
+              <MapIcon size={20} style={{ marginRight: '8px', verticalAlign: 'middle' }}/>
               Open in Google Maps
             </button>
           )}
@@ -399,7 +443,7 @@ const StudentHome = () => {
             SOS Emergency
           </button>
           
-          {(activeRide.status === 'requested' || activeRide.status === 'accepted') && (
+          {(activeRide?.status === 'requested' || activeRide?.status === 'accepted') && (
             <button 
               className="btn btn-large w-full" 
               style={{ backgroundColor: 'transparent', color: 'var(--ink)', border: '1px solid var(--surface-pressed)', marginTop: 'var(--space-md)', borderRadius: 'var(--radius-pill)' }} 
@@ -436,7 +480,8 @@ const StudentHome = () => {
                  setGpsCoords(CAMPUS_CENTER);
               } else if (coords) {
                  setGpsCoords(coords);
-                 if (CAMPUS_CENTER && CAMPUS_CENTER[0] !== 0 && (accuracy > 100 || calculateDistance(coords[0], coords[1], CAMPUS_CENTER[0], CAMPUS_CENTER[1]) > 5)) {
+                 setGpsAccuracy(accuracy);
+                 if (CAMPUS_CENTER && CAMPUS_CENTER[0] !== 0 && (accuracy > 50 || calculateDistance(coords[0], coords[1], CAMPUS_CENTER[0], CAMPUS_CENTER[1]) > 5)) {
                     setGpsWarning(true);
                  } else {
                     setGpsWarning(false);
@@ -558,16 +603,16 @@ const StudentHome = () => {
           </button>
         </div>
 
-        <h2 className="text-display-md" style={{ marginBottom: '16px', pointerEvents: 'auto' }}>
+        <h2 className="text-display-md" style={{ marginBottom: '0', pointerEvents: 'auto' }}>
           {rideType === 'parcel' ? 'Where to deliver?' : rideType === 'emergency' ? 'Emergency Destination' : 'Where to?'}
         </h2>
         
-        {!pickMode && gpsWarning && (
-          <div style={{ backgroundColor: 'rgba(255, 0, 0, 0.1)', color: 'var(--status-sos)', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'auto' }}>
-            <ShieldAlert size={20} />
+        {!pickMode && gpsWarning && SHOW_LOCATION_WARNING && (
+          <div style={{ backgroundColor: 'var(--canvas-soft)', color: 'var(--ink)', border: '1px solid var(--surface-pressed)', padding: '12px', borderRadius: '8px', fontSize: '14px', marginBottom: '16px', marginTop: '16px', display: 'flex', alignItems: 'center', gap: '8px', pointerEvents: 'auto' }}>
+            <MapPin size={20} />
             <span style={{flex: 1}}>Your location looks off. Pick your pickup on the map.</span>
-            <button onClick={() => { setPickup('Campus Center'); setCustomPickupCoords(CAMPUS_CENTER); setGpsWarning(false); }} style={{ background: 'transparent', border: '1px solid var(--status-sos)', color: 'var(--status-sos)', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>Use campus center</button>
-            <button onClick={() => setGpsWarning(false)} style={{ background: 'none', border: 'none', color: 'var(--status-sos)', cursor: 'pointer', padding: 0 }}><X size={16} /></button>
+            <button onClick={() => { setPickup('Campus Center'); setCustomPickupCoords(CAMPUS_CENTER); setGpsWarning(false); }} style={{ background: 'transparent', border: '1px solid var(--ink)', color: 'var(--ink)', borderRadius: 'var(--radius-pill)', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}>Use campus center</button>
+            <button onClick={() => setGpsWarning(false)} style={{ background: 'none', border: 'none', color: 'var(--ink)', cursor: 'pointer', padding: 0 }}><X size={16} /></button>
           </div>
         )}
         
@@ -666,24 +711,24 @@ const StudentHome = () => {
         {/* See Price Button */}
         <div style={{ marginTop: '16px', pointerEvents: 'auto' }}>
           <button 
-            disabled={!pickup || !dropoff}
+            disabled={(!pickup || !dropoff) || (gpsWarning && !customPickupCoords)}
             onClick={() => setShowPriceModal(true)}
             style={{ 
               width: '100%', 
               minHeight: '52px', 
               borderRadius: 'var(--radius-pill)', 
-              backgroundColor: (pickup && dropoff) ? 'var(--ink)' : '#afafaf',
-              color: (pickup && dropoff) ? 'var(--on-dark)' : '#000000',
+              backgroundColor: ((pickup && dropoff) && !(gpsWarning && !customPickupCoords)) ? 'var(--ink)' : '#afafaf',
+              color: ((pickup && dropoff) && !(gpsWarning && !customPickupCoords)) ? 'var(--on-dark)' : '#000000',
               border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: '16px',
               fontWeight: 'bold',
-              cursor: (pickup && dropoff) ? 'pointer' : 'not-allowed'
+              cursor: ((pickup && dropoff) && !(gpsWarning && !customPickupCoords)) ? 'pointer' : 'not-allowed'
             }}
           >
-            {(pickup && dropoff) ? 'See price' : 'Enter a destination to continue'}
+            {(gpsWarning && !customPickupCoords) ? 'Confirm pickup on map to continue' : (pickup && dropoff) ? 'See price' : 'Enter a destination to continue'}
           </button>
         </div>
       </div>
@@ -761,7 +806,12 @@ const StudentHome = () => {
               className="btn w-full" 
               onClick={() => { 
                 setShowPriceModal(false);
-                requestRide(pickup, dropoff, stops, rideType, customPickupCoords || gpsCoords, customDropoffCoords, customStopsCoords, estimatedPrice);
+                requestRide(pickup, dropoff, stops, rideType, customPickupCoords || gpsCoords, customDropoffCoords, customStopsCoords, estimatedPrice, {
+                  pickupLat: (customPickupCoords || gpsCoords)?.[0],
+                  pickupLng: (customPickupCoords || gpsCoords)?.[1],
+                  pickupName: pickup,
+                  pickupAccuracy: customPickupCoords ? null : gpsAccuracy
+                });
               }}
               style={{ backgroundColor: 'var(--ink)', borderRadius: '999px', color: 'white', height: '52px', fontSize: '16px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
             >

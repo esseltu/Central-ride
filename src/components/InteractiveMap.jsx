@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { LocateFixed, Loader2 } from 'lucide-react';
@@ -28,8 +28,42 @@ const createPinIcon = (color) => {
 };
 
 const pickupIcon = createPinIcon('#000000');
-const dropoffIcon = createPinIcon('#800020');
-const stopIcon = createPinIcon('#f5a623');
+
+const createSquareIcon = (color) => L.divIcon({
+  className: '',
+  html: `<div style="width: 16px; height: 16px; background-color: ${color}; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+  popupAnchor: [0, -8]
+});
+const dropoffIcon = createSquareIcon('#000000');
+const stopIcon = createSquareIcon('#f5a623');
+
+const createDotRingIcon = (outer, inner) => L.divIcon({
+  className: '',
+  html: `<div style="width: 20px; height: 20px; background-color: ${inner}; border: 5px solid ${outer}; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, -10]
+});
+const driverIcon = createDotRingIcon('#000000', '#ffffff'); // black dot with white ring
+const studentIcon = createDotRingIcon('#ffffff', '#000000'); // black ring with white center
+const studentOldIcon = createDotRingIcon('#aaaaaa', '#ffffff'); // grayed out
+
+const carIcon = L.divIcon({
+  className: '',
+  html: `<div style="width: 24px; height: 24px; background-color: #000000; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H9.3a2 2 0 0 0-1.6.8L5 11l-5.16.86a1 1 0 0 0-.84.99V16h3m10 0a2 2 0 1 1-4 0m-6 0a2 2 0 1 1-4 0"/></svg></div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  popupAnchor: [0, -12]
+});
+
+const getIconForKind = (kind) => {
+  if (kind === 'self') return driverIcon;
+  if (kind === 'driver') return carIcon;
+  if (kind === 'destination') return dropoffIcon;
+  return pickupIcon;
+};
 
 
 
@@ -72,7 +106,7 @@ function MapEventsHandler({ onMapClick, onMapDragStart, onMapMoveEnd }) {
   return null;
 }
 
-function MapController({ overrideCenter, routeCoords }) {
+function MapController({ overrideCenter, routeCoords, bottomPadding = 0 }) {
   const map = useMap();
   
   useEffect(() => {
@@ -84,9 +118,9 @@ function MapController({ overrideCenter, routeCoords }) {
   useEffect(() => {
     if (routeCoords && routeCoords.length > 0) {
       const bounds = L.latLngBounds(routeCoords);
-      map.fitBounds(bounds, { padding: [50, 50], duration: 0.5 });
+      map.fitBounds(bounds, { paddingTopLeft: [50, 50], paddingBottomRight: [50, bottomPadding + 50], maxZoom: 17, duration: 0.5 });
     }
-  }, [routeCoords, map]);
+  }, [routeCoords, map, bottomPadding]);
 
   return null;
 }
@@ -141,7 +175,12 @@ function RecenterButton({ setGpsError }) {
 
 const EMPTY_ARRAY = [];
 
-const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLocationFound, pickupCoords, dropoffCoords, stops = EMPTY_ARRAY, stopsCoords = EMPTY_ARRAY, onMapClick, setIsGeocoding, setGeocodeError, onMapDragStart, onMapMoveEnd, overrideCenter, isActiveTrip }) => {
+const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLocationFound, pickupCoords, dropoffCoords, pickupAccuracy, stops = EMPTY_ARRAY, stopsCoords = EMPTY_ARRAY, onMapClick, setIsGeocoding, setGeocodeError, onMapDragStart, onMapMoveEnd, overrideCenter, isActiveTrip, bottomPadding, useTestLocation, studentCoords, studentUpdatedAt, startMarkerLabel, startMarkerKind, endMarkerLabel, endMarkerKind, studentMarkerLabel, driverCoords, driverMarkerLabel }) => {
+  const actualStartLabel = startMarkerLabel || (pickupStr === 'Current Location' ? 'You' : pickupStr);
+  const actualStartKind = startMarkerKind || (pickupStr === 'Current Location' ? 'self' : 'pickup');
+  const actualEndLabel = endMarkerLabel || (dropoffStr === 'Current Location' ? 'You' : dropoffStr);
+  const actualEndKind = endMarkerKind || (dropoffStr === 'Current Location' ? 'self' : 'destination');
+
   const [currentLocation, setCurrentLocation] = useState(CAMPUS_CENTER);
   const [routeCoords, setRouteCoords] = useState([]);
   const [resolvedStart, setResolvedStart] = useState(pickupCoords || CAMPUS_CENTER);
@@ -154,7 +193,7 @@ const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLo
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const coords = [position.coords.latitude, position.coords.longitude];
+          const coords = useTestLocation ? [5.7694, 0.0840] : [position.coords.latitude, position.coords.longitude];
           setCurrentLocation(coords);
           if (pickupStr === 'Current Location' || pickupStr === 'Selected on Map') {
              setResolvedStart(coords);
@@ -177,7 +216,7 @@ const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLo
     if (isActiveTrip && navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          const coords = [position.coords.latitude, position.coords.longitude];
+          const coords = useTestLocation ? [5.7694, 0.0840] : [position.coords.latitude, position.coords.longitude];
           setCurrentLocation(coords);
           if (onLocationFound) onLocationFound(coords, position.coords.accuracy, null);
         },
@@ -247,6 +286,7 @@ const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLo
         if (maxDist > 0.8) calculatedPrice = 15 + Math.ceil(maxDist - 0.8) * 10;
         if (resolvedStopsArray.length > 0) calculatedPrice += (resolvedStopsArray.length * 5);
 
+        // Calculate and log route pricing (will be overridden below if route is found)
         if (isMounted && setEstimatedPrice) setEstimatedPrice(calculatedPrice);
 
         const waypoints = [start, ...resolvedStopsArray, end]
@@ -261,8 +301,26 @@ const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLo
           if (data.routes && data.routes.length > 0) {
             const route = data.routes[0];
             const coords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            
+            // Fare = base + perKm * km, rounded to a whole cedi, with a minimum fare.
+            const distanceMeters = route.distance;
+            const km = distanceMeters / 1000;
+            const baseFare = 10;
+            const perKm = 5;
+            const minFare = 10;
+            let finalPrice = Math.max(minFare, Math.round(baseFare + perKm * km));
+            if (resolvedStopsArray.length > 0) finalPrice += (resolvedStopsArray.length * 5);
+
+            if (import.meta.env.DEV) {
+              console.log("distanceMeters:", distanceMeters, "km:", km, "finalPrice:", finalPrice);
+              if (km > 15) {
+                console.warn("Ride is far from campus");
+              }
+            }
+
             if (isMounted) {
               setRouteCoords(coords);
+              if (setEstimatedPrice) setEstimatedPrice(finalPrice);
               if (setEta) {
                 const minutes = Math.ceil(route.duration / 60);
                 setEta(`${minutes} min`);
@@ -306,23 +364,39 @@ const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLo
       />
       
       {resolvedStart && (
-        <Marker position={resolvedStart} icon={pickupIcon}>
-          <Popup>Pickup: {pickupStr}</Popup>
+        <Marker position={resolvedStart} icon={getIconForKind(actualStartKind)}>
+          <Popup closeButton={true}><span style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>{actualStartLabel}</span></Popup>
         </Marker>
+      )}
+
+      {resolvedStart && pickupAccuracy && pickupStr !== 'Current Location' && (
+        <Circle center={resolvedStart} radius={Math.min(pickupAccuracy, 100)} pathOptions={{ color: '#cccccc', fillColor: '#cccccc', fillOpacity: 0.3, weight: 1 }} />
       )}
 
       {resolvedStops.map((stopCoords, index) => {
         if (!stopCoords) return null;
         return (
           <Marker key={index} position={stopCoords} icon={stopIcon}>
-            <Popup>Stop {index + 1}: {stops[index]}</Popup>
+            <Popup closeButton={true}><span style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>{stops[index]}</span></Popup>
           </Marker>
         );
       })}
 
       {resolvedEnd && dropoffStr && (
-        <Marker position={resolvedEnd} icon={dropoffIcon}>
-          <Popup>Destination: {dropoffStr}</Popup>
+        <Marker position={resolvedEnd} icon={getIconForKind(actualEndKind)}>
+          <Popup closeButton={true}><span style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>{actualEndLabel}</span></Popup>
+        </Marker>
+      )}
+
+      {studentCoords && (
+        <Marker position={studentCoords} icon={(studentUpdatedAt && (Date.now() - studentUpdatedAt > 60000)) ? studentOldIcon : studentIcon}>
+          <Popup closeButton={true}><span style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>{studentMarkerLabel || 'Student'} {(studentUpdatedAt && (Date.now() - studentUpdatedAt > 60000)) ? `(Location last updated ${Math.floor((Date.now() - studentUpdatedAt) / 60000)} min ago)` : ''}</span></Popup>
+        </Marker>
+      )}
+
+      {driverCoords && (
+        <Marker position={driverCoords} icon={getIconForKind('driver')}>
+          <Popup closeButton={true}><span style={{ fontSize: '14px', whiteSpace: 'nowrap' }}>{driverMarkerLabel || 'Your driver'}</span></Popup>
         </Marker>
       )}
 
@@ -334,7 +408,7 @@ const InteractiveMap = ({ pickupStr, dropoffStr, setEta, setEstimatedPrice, onLo
       )}
 
       <MapResizer />
-      <MapController overrideCenter={overrideCenter} routeCoords={routeCoords} />
+      <MapController overrideCenter={overrideCenter} routeCoords={routeCoords} bottomPadding={bottomPadding} />
       <MapEventsHandler onMapClick={onMapClick} onMapDragStart={onMapDragStart} onMapMoveEnd={onMapMoveEnd} />
       <RecenterButton setGpsError={setGpsError} />
     </MapContainer>

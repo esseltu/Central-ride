@@ -28,6 +28,7 @@ import AdminDashboard from './views/admin/AdminDashboard';
 import AdminRecords from './views/admin/AdminRecords';
 import AdminRatings from './views/admin/AdminRatings';
 import Profile from './components/Profile';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Import Bell icon from lucide-react for notification styling
 import { Bell } from 'lucide-react';
@@ -103,36 +104,38 @@ function App() {
           If they try to go to a URL they aren't authorized to access, `*` redirects them to `/` (home).
       */}
       
-      {/* 1. STUDENT ROUTES */}
-      {userData.role === 'student' && (
-        <Routes>
-          <Route path="/" element={<StudentHome />} />
-          <Route path="/history" element={<StudentHistory />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      )}
-      
-      {/* 2. DRIVER / MOTOR RIDER ROUTES */}
-      {(userData.role === 'driver' || userData.role === 'rider') && (
-        <Routes>
-          <Route path="/" element={<DriverHome />} />
-          <Route path="/earnings" element={<DriverEarnings />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      )}
-      
-      {/* 3. ADMIN ROUTES */}
-      {userData.role === 'admin' && (
-        <Routes>
-          <Route path="/" element={<AdminDashboard />} />
-          <Route path="/records" element={<AdminRecords />} />
-          <Route path="/alerts" element={<AdminDashboard />} />
-          <Route path="/admin/ratings/:role" element={<AdminRatings />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      )}
+      <ErrorBoundary>
+        {/* 1. STUDENT ROUTES */}
+        {userData.role === 'student' && (
+          <Routes>
+            <Route path="/" element={<StudentHome />} />
+            <Route path="/history" element={<StudentHistory />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
+        
+        {/* 2. DRIVER / MOTOR RIDER ROUTES */}
+        {(userData.role === 'driver' || userData.role === 'rider') && (
+          <Routes>
+            <Route path="/" element={<DriverHome />} />
+            <Route path="/earnings" element={<DriverEarnings />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
+        
+        {/* 3. ADMIN ROUTES */}
+        {userData.role === 'admin' && (
+          <Routes>
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/records" element={<AdminRecords />} />
+            <Route path="/alerts" element={<AdminDashboard />} />
+            <Route path="/admin/ratings/:role" element={<AdminRatings />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
+      </ErrorBoundary>
 
       {/* BOTTOM NAVIGATION BAR: Renders on mobile screens for easy thumb reach */}
       <BottomNav />

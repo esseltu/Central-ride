@@ -1,4 +1,5 @@
 export const CAMPUS_CENTER = [5.7694, 0.0840];
+export const SHOW_LOCATION_WARNING = false;
 
 export const CAMPUS_PLACES = [
   { id: 'library', name: 'Library', lat: 0.0, lng: 0.0 },

@@ -132,7 +132,7 @@ export const MockDataProvider = ({ children }) => {
 
   // REQUEST RIDE METHOD:
   // Creates a new ride request document in Cloud Firestore.
-  const requestRide = async (pickup, dropoff, stops = [], type = 'ride', pickupCoords = null, dropoffCoords = null, stopsCoords = [], calculatedPrice = 10) => {
+  const requestRide = async (pickup, dropoff, stops = [], type = 'ride', pickupCoords = null, dropoffCoords = null, stopsCoords = [], calculatedPrice = 10, extraPickupData = {}) => {
     const newRide = {
       studentId: currentUser?.uid || 'unknown',
       studentName: currentUser?.name || currentUser?.email || 'Student',
@@ -148,7 +148,12 @@ export const MockDataProvider = ({ children }) => {
       status: 'requested', // Initial state
       price: calculatedPrice || 10,
       otp: Math.floor(1000 + Math.random() * 9000).toString(), // Generate a 4-digit verification code
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      
+      pickupLat: extraPickupData.pickupLat !== undefined ? extraPickupData.pickupLat : (pickupCoords ? pickupCoords[0] : null),
+      pickupLng: extraPickupData.pickupLng !== undefined ? extraPickupData.pickupLng : (pickupCoords ? pickupCoords[1] : null),
+      pickupName: extraPickupData.pickupName || pickup || '',
+      pickupAccuracy: extraPickupData.pickupAccuracy || null
     };
     
     // Safety check to remove any fields that are undefined, since Firestore rejects undefined values.
@@ -286,6 +291,18 @@ export const MockDataProvider = ({ children }) => {
     } catch (e) { console.error(e); }
   };
   
+  const updateStudentLocation = async (rideId, lat, lng) => {
+    try {
+      await updateDoc(doc(db, 'rides', rideId), {
+        studentLat: lat,
+        studentLng: lng,
+        studentUpdatedAt: Date.now()
+      });
+    } catch (e) {
+      console.error("Error updating student location:", e);
+    }
+  };
+
   // Placeholders
   const login = () => {};
   const logout = () => {};
@@ -312,7 +329,8 @@ export const MockDataProvider = ({ children }) => {
       confirmPayment,
       submitStudentRating,
       cancelRide,
-      triggerSOS
+      triggerSOS,
+      updateStudentLocation
     }}>
       {children}
     </MockDataContext.Provider>

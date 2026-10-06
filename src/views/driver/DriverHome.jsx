@@ -15,6 +15,9 @@ const DriverHome = () => {
   const [rating, setRating] = useState(5);
   const [enteredOtp, setEnteredOtp] = useState('');
   const [otpError, setOtpError] = useState('');
+  const [useTestLocation, setUseTestLocation] = useState(import.meta.env.DEV);
+  const [driverEta, setDriverEta] = useState(null);
+  const [driverDistance, setDriverDistance] = useState(null);
   
   // ACTIVE RIDE CONTEXT VIEW:
   // If this driver is currently conducting an accepted/in-progress ride, show the navigation dashboard.
@@ -57,8 +60,20 @@ const DriverHome = () => {
                dropoffStr={mapDropoff} 
                pickupCoords={mapPickupCoords} 
                dropoffCoords={mapDropoffCoords} 
+               pickupAccuracy={activeRide.pickupAccuracy}
                stops={activeRide.stops || []}
                stopsCoords={activeRide.stopsCoords || []}
+               useTestLocation={useTestLocation}
+               studentCoords={activeRide.studentLat ? [activeRide.studentLat, activeRide.studentLng] : null}
+               studentUpdatedAt={activeRide.studentUpdatedAt}
+               setEta={setDriverEta}
+               setEstimatedPrice={setDriverDistance} // Borrowing this to trigger the distance calculation internally if needed, or we can just rely on ETA
+               bottomPadding={84}
+               isActiveTrip={true}
+               startMarkerLabel={activeRide.status === 'accepted' ? 'You' : `Pickup: ${activeRide.pickupName || activeRide.pickup}`}
+               startMarkerKind={activeRide.status === 'accepted' ? 'self' : 'pickup'}
+               endMarkerLabel={activeRide.status === 'accepted' ? `Pickup: ${activeRide.pickupName || activeRide.pickup}` : `Destination: ${activeRide.dropoff}`}
+               endMarkerKind={activeRide.status === 'accepted' ? 'pickup' : 'destination'}
              />
              <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--primary)', color: 'white', padding: '6px 12px', borderRadius: '16px', fontSize: '14px', zIndex: 1000, pointerEvents: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
                 {routingMessage}
@@ -72,6 +87,7 @@ const DriverHome = () => {
             backgroundColor: 'white',
             borderRadius: '16px 16px 0 0',
             padding: 'var(--space-xl)',
+            paddingBottom: 'calc(var(--nav-height) + 24px)',
             color: 'var(--ink)',
             boxShadow: '0 -4px 16px rgba(0,0,0,0.16)',
             display: 'flex',
@@ -80,28 +96,70 @@ const DriverHome = () => {
             maxHeight: '60dvh',
             overflowY: 'auto'
           }}>
-            <h1 className="text-display-md mb-2" style={{ color: 'var(--ink)', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 'var(--space-sm)' }}>
-              Active {activeRide.type === 'parcel' ? 'Delivery' : 'Ride'}
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(0,0,0,0.1)', paddingBottom: 'var(--space-sm)' }}>
+              <h1 className="text-display-md" style={{ color: 'var(--ink)' }}>
+                Active {activeRide.type === 'parcel' ? 'Delivery' : 'Ride'}
+              </h1>
+              {import.meta.env.DEV && (
+                <label style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <input type="checkbox" checked={useTestLocation} onChange={e => setUseTestLocation(e.target.checked)} /> Use campus location
+                </label>
+              )}
+            </div>
             
-            <div className="flex-col gap-sm" style={{ marginTop: 'var(--space-sm)' }}>
-              <p className="text-body-md">Passenger: <strong>{activeRide.studentName}</strong></p>
-              <p className="text-body-sm" style={{ color: 'var(--body)' }}>From: {activeRide.pickup}</p>
+            <div className="card-soft" style={{ marginTop: 'var(--space-sm)', backgroundColor: 'var(--canvas-soft)', padding: '16px', borderRadius: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <span className="text-body-md">Passenger: <strong>{activeRide.studentName}</strong></span>
+                <span style={{ backgroundColor: 'var(--ink)', color: 'white', padding: '2px 8px', borderRadius: 'var(--radius-pill)', fontSize: '12px', fontWeight: 'bold' }}>{activeRide.type.toUpperCase()}</span>
+              </div>
               
-              {activeRide.stops && activeRide.stops.map((stop, idx) => (
-                 <p key={idx} className="text-body-sm" style={{ color: 'var(--body)' }}>Stop {idx + 1}: {stop}</p>
-              ))}
+              <div style={{ display: 'flex' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '24px', marginRight: '12px' }}>
+                   <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: 'var(--ink)' }}></div>
+                   <div style={{ width: '2px', flex: 1, backgroundColor: 'var(--ink)', opacity: 0.2, margin: '4px 0' }}></div>
+                   <div style={{ width: '8px', height: '8px', backgroundColor: 'var(--ink)' }}></div>
+                </div>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div style={{ paddingBottom: '16px' }}>
+                    <p className="text-body-md" style={{ margin: 0, fontWeight: 'bold' }}>{activeRide.pickupName || activeRide.pickup}</p>
+                  </div>
+                  <div>
+                    {activeRide.stops && activeRide.stops.map((stop, idx) => (
+                      <p key={idx} className="text-body-sm" style={{ color: 'var(--body)', margin: '0 0 8px 0' }}>Stop {idx + 1}: {stop}</p>
+                    ))}
+                    <p className="text-body-md" style={{ margin: 0, fontWeight: 'bold' }}>{activeRide.dropoff}</p>
+                  </div>
+                </div>
+              </div>
               
-              <p className="text-body-sm" style={{ color: 'var(--body)' }}>To: {activeRide.dropoff}</p>
-              <p className="text-body-sm" style={{ color: 'var(--ink)' }}>Type: <strong style={{ backgroundColor: 'var(--canvas-soft)', padding: '2px 8px', borderRadius: 'var(--radius-pill)' }}>{activeRide.type.toUpperCase()}</strong></p>
-              <p className="text-body-lg" style={{ fontWeight: 'bold', color: 'var(--ink)' }}>Price: GH₵ {activeRide.price}</p>
+              <div style={{ borderTop: '1px solid rgba(0,0,0,0.1)', marginTop: '16px', paddingTop: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                <span className="text-body-md">Total Fare</span>
+                <span className="text-body-lg" style={{ fontWeight: 'bold', color: 'var(--ink)' }}>GH₵ {activeRide.price}</span>
+              </div>
             </div>
 
             {/* FLOW 1: Driver Accepted. En Route to Pickup. */}
             {activeRide.status === 'accepted' && (
-              <button className="btn btn-large w-full" style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', marginTop: 'var(--space-md)', borderRadius: 'var(--radius-pill)' }} onClick={() => arriveAtPickup(activeRide.id)}>
-                Arrived at Pickup
-              </button>
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 16px', backgroundColor: 'var(--status-in-progress)', color: 'white', borderRadius: '12px', marginTop: '8px' }}>
+                  <span>Distance to pickup:</span>
+                  <strong>{driverEta || 'calculating...'}</strong>
+                </div>
+                <button 
+                  className="btn btn-large w-full" 
+                  style={{ backgroundColor: 'var(--primary)', color: 'white', marginTop: 'var(--space-md)', borderRadius: 'var(--radius-pill)' }} 
+                  onClick={() => {
+                    const lat = activeRide.pickupCoords?.[0] || activeRide.pickupLat;
+                    const lng = activeRide.pickupCoords?.[1] || activeRide.pickupLng;
+                    if (lat && lng) window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+                  }}
+                >
+                  Navigate to pickup
+                </button>
+                <button className="btn btn-large w-full" style={{ backgroundColor: 'var(--ink)', color: 'var(--on-dark)', marginTop: '8px', borderRadius: 'var(--radius-pill)' }} onClick={() => arriveAtPickup(activeRide.id)}>
+                  Arrived at Pickup
+                </button>
+              </>
             )}
 
             {/* FLOW 2: Driver Arrived. Verifying OTP Code. */}
@@ -241,7 +299,7 @@ const DriverHome = () => {
       {/* Map on Right */}
       <div className="split-main">
         <div className="mock-map" style={{ position: 'relative' }}>
-           <InteractiveMap />
+           <InteractiveMap useTestLocation={useTestLocation} bottomPadding={84} />
            <div style={{ position: 'absolute', top: '24px', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--canvas)', color: 'var(--ink)', padding: '6px 12px', borderRadius: '16px', fontSize: '14px', zIndex: 1000, pointerEvents: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', fontWeight: 'bold' }}>
               Waiting for Requests...
            </div>
